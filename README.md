@@ -4,7 +4,7 @@
 Использует чистую архитектуру, PostgreSQL, Redis, Prometheus и Grafana.
 
 ## Стек
-- **Go 1.21**, **chi** (роутер)
+- **Go 1.25**, **chi** (роутер)
 - **PostgreSQL** (основное хранилище), **pgx** (драйвер)
 - **Redis** (кэширование), **go-redis**
 - **Prometheus** + **Grafana** (метрики и мониторинг)
