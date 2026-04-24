@@ -47,6 +47,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	// redis load
+
+	redisClient, err := store.NewRedisClient(ctx, cfg)
+
+	if err != nil {
+		slog.Error("Редиска не законнектилась", "error", err)
+		os.Exit(1)
+	}
+
+	defer redisClient.Close()
+
 	noteStore := store.NewNoteStore(pool)
 	noteHandler := handler.NewNoteHandler(noteStore)
 

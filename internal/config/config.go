@@ -6,7 +6,9 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
+	DatabaseURL   string
+	RedisAddr     string
+	RedisPassword string
 }
 
 func Load() (*Config, error) {
@@ -15,7 +17,17 @@ func Load() (*Config, error) {
 		return nil, errors.New("DATABASE_URL not found")
 	}
 
+	redisAddr := os.Getenv("REDIS_ADDR")
+
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
 	return &Config{
-		DatabaseURL: dbURL,
+		DatabaseURL:   dbURL,
+		RedisAddr:     redisAddr,
+		RedisPassword: redisPassword,
 	}, nil
 }

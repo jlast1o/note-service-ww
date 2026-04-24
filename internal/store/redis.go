@@ -1,0 +1,23 @@
+package store
+
+import (
+	"context"
+	"fmt"
+	"service/internal/config"
+
+	"github.com/redis/go-redis"
+)
+
+func NewRedisClient(ctx context.Context, cfg *config.Config) (*redis.Client, error) {
+	rbd := redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddr,
+		Password: cfg.RedisPassword,
+		DB:       0,
+	})
+
+	if err := rbd.Ping().Err(); err != nil {
+		return nil, fmt.Errorf("редиска не подключилась %w", err)
+	}
+
+	return rbd, nil
+}
