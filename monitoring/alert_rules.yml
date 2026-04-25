@@ -1,0 +1,12 @@
+# monitoring/alerting_rules.yml
+groups:
+  - name: notes-service
+    rules:
+      - alert: HighTraffic
+        expr: increase(http_requests_total[1m]) > 10
+        for: 10s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокий трафик на notes-service"
+          description: "Количество запросов за минуту выросло на {{ $value }} (порог 10)."

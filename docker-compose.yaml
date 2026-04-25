@@ -33,9 +33,21 @@ services:
     restart: unless-stopped
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alerting_rules.yml:/etc/prometheus/alerting_rules.yml   # правила
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
+    networks:
+      - monitoring
+
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
     networks:
       - monitoring
 
