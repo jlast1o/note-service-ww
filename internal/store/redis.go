@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"service/internal/config"
 
-	"github.com/redis/go-redis"
+	"github.com/redis/go-redis/v9"
 )
 
 func NewRedisClient(ctx context.Context, cfg *config.Config) (*redis.Client, error) {
@@ -15,7 +15,7 @@ func NewRedisClient(ctx context.Context, cfg *config.Config) (*redis.Client, err
 		DB:       0,
 	})
 
-	if err := rbd.Ping().Err(); err != nil {
+	if err := rbd.Ping(ctx).Err(); err != nil {
 		return nil, fmt.Errorf("редиска не подключилась %w", err)
 	}
 

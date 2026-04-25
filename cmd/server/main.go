@@ -59,7 +59,8 @@ func main() {
 	defer redisClient.Close()
 
 	noteStore := store.NewNoteStore(pool)
-	noteHandler := handler.NewNoteHandler(noteStore)
+	cachedStore := store.NewCachedStore(noteStore, redisClient)
+	noteHandler := handler.NewNoteHandler(cachedStore)
 
 	r := chi.NewRouter()
 
