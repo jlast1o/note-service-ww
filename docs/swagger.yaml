@@ -1,0 +1,121 @@
+basePath: /
+definitions:
+  model.Note:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: your-email@example.com
+    name: API Support
+    url: https://github.com/your-username/notes-service
+  description: Микросервис для управления заметками.
+  termsOfService: http://swagger.io/terms/
+  title: Notes Service API
+  version: "1.0"
+paths:
+  /notes:
+    get:
+      description: Возвращает список всех заметок, отсортированных по ID.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список заметок
+          schema:
+            items:
+              $ref: '#/definitions/model.Note'
+            type: array
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить все заметки
+      tags:
+      - notes
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новую заметку с заданным title и опциональным content.
+      parameters:
+      - description: Данные заметки (обязательное поле title)
+        in: body
+        name: note
+        required: true
+        schema:
+          $ref: '#/definitions/model.Note'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Успешное создание
+          schema:
+            $ref: '#/definitions/model.Note'
+        "400":
+          description: Ошибка валидации
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Создать заметку
+      tags:
+      - notes
+  /notes/{id}:
+    get:
+      description: Возвращает одну заметку по её идентификатору.
+      parameters:
+      - description: ID заметки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Найденная заметка
+          schema:
+            $ref: '#/definitions/model.Note'
+        "400":
+          description: Некорректный ID
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Заметка не найдена
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить заметку по ID
+      tags:
+      - notes
+securityDefinitions:
+  APIKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

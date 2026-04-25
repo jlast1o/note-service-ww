@@ -1,3 +1,18 @@
+// @title           Notes Service API
+// @version         1.0
+// @description     Микросервис для управления заметками.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    https://github.com/your-username/notes-service
+// @contact.email  your-email@example.com
+
+// @host      localhost:8080
+// @BasePath  /
+
+// @securityDefinitions.apikey APIKeyAuth
+// @in header
+// @name Authorization
 package main
 
 import (
@@ -17,7 +32,44 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	_ "service/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+// @Summary      Создать заметку
+// @Description  Создаёт новую заметку с заданным title и опциональным content.
+// @Tags         notes
+// @Accept       json
+// @Produce      json
+// @Param        note body      model.Note true "Данные заметки (обязательное поле title)"
+// @Success      201  {object}  model.Note "Успешное создание"
+// @Failure      400  {object}  map[string]string "Ошибка валидации"
+// @Failure      500  {object}  map[string]string "Внутренняя ошибка"
+// @Router       /notes [post]
+func _createAnnotation() {}
+
+// @Summary      Получить все заметки
+// @Description  Возвращает список всех заметок, отсортированных по ID.
+// @Tags         notes
+// @Produce      json
+// @Success      200  {array}   model.Note "Список заметок"
+// @Failure      500  {object}  map[string]string "Внутренняя ошибка"
+// @Router       /notes [get]
+func _getAllAnnotation() {}
+
+// @Summary      Получить заметку по ID
+// @Description  Возвращает одну заметку по её идентификатору.
+// @Tags         notes
+// @Produce      json
+// @Param        id   path      int true "ID заметки"
+// @Success      200  {object}  model.Note "Найденная заметка"
+// @Failure      400  {object}  map[string]string "Некорректный ID"
+// @Failure      404  {object}  map[string]string "Заметка не найдена"
+// @Failure      500  {object}  map[string]string "Внутренняя ошибка"
+// @Router       /notes/{id} [get]
+func _getByIDAnnotation() {}
 
 func main() {
 	// env load
@@ -71,6 +123,9 @@ func main() {
 	r.Get("/notes", noteHandler.GetAll)
 	r.Get("/notes/{id}", noteHandler.GetByID)
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("/swagger/doc.json"),
+	))
 
 	srv := &http.Server{
 		Addr:         ":8080",

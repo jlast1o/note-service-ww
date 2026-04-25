@@ -8,6 +8,8 @@ import (
 	"service/internal/store"
 	"strconv"
 
+	//_ "service/docs"
+
 	"github.com/go-chi/chi"
 )
 
@@ -18,6 +20,18 @@ type NoteHandler struct {
 func NewNoteHandler(s store.NoteStorer) *NoteHandler {
 	return &NoteHandler{store: s}
 }
+
+// Create создаёт новую заметку.
+// @Summary      Создать заметку
+// @Description  Создаёт новую заметку с заданным title и опциональным content.
+// @Tags         notes
+// @Accept       json
+// @Produce      json
+// @Param        note body      model.Note true "Данные заметки (обязательное поле title)"
+// @Success      201  {object}  model.Note "Успешное создание"
+// @Failure      400  {object}  map[string]string "Ошибка валидации"
+// @Failure      500  {object}  map[string]string "Внутренняя ошибка"
+// @Router       /notes [post]
 
 func (h *NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var input struct {
@@ -53,6 +67,15 @@ func (h *NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(note)
 }
 
+// GetAll возвращает все заметки.
+// @Summary      Получить все заметки
+// @Description  Возвращает список всех заметок, отсортированных по ID.
+// @Tags         notes
+// @Produce      json
+// @Success      200  {array}   model.Note "Список заметок"
+// @Failure      500  {object}  map[string]string "Внутренняя ошибка"
+// @Router       /notes [get]
+
 func (h *NoteHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	notes, err := h.store.GetAll(r.Context())
 
@@ -69,6 +92,18 @@ func (h *NoteHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(notes)
 }
+
+// GetByID возвращает заметку по ID.
+// @Summary      Получить заметку по ID
+// @Description  Возвращает одну заметку по её идентификатору.
+// @Tags         notes
+// @Produce      json
+// @Param        id   path      int true "ID заметки"
+// @Success      200  {object}  model.Note "Найденная заметка"
+// @Failure      400  {object}  map[string]string "Некорректный ID"
+// @Failure      404  {object}  map[string]string "Заметка не найдена"
+// @Failure      500  {object}  map[string]string "Внутренняя ошибка"
+// @Router       /notes/{id} [get]
 
 func (h *NoteHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
