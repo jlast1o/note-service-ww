@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"service/internal/model"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -13,6 +14,8 @@ type NoteStorer interface {
 	Create(ctx context.Context, title, content string) (model.Note, error)
 	GetAll(ctx context.Context, limit, offset int) ([]model.Note, int, error)
 	GetByID(ctx context.Context, id int) (model.Note, error)
+	Update(ctx context.Context, id int, title, content string) (model.Note, error)
+	Delete(ctx context.Context, id int) error
 }
 
 var ErrNotFound = errors.New("заметка не найдена")
@@ -94,4 +97,37 @@ func (s *NoteStore) GetByID(ctx context.Context, id int) (model.Note, error) {
 	}
 
 	return note, nil
+}
+
+func (s *NoteStore) Update(ctx context.Context, id int, title, content string) (model.Note, error) {
+	query := `UPDATE notes SET title = $1, content = $2 where id = $3 RETURNING id, title, content, created_at`
+
+	row := s.pool.QueryRow(ctx, query, id, title, content)
+	var note model.Note
+
+	err := row.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.Note{}, ErrNotFound
+	}
+
+	if err != nil {
+		return model.Note{}, fmt.Errorf("Обновление записи: %w", err)
+	}
+
+	return note, nil
+}
+
+func (s *NoteStore) Delete(ctx context.Context, id int) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM notes where id = $1`, id)
+
+	if err != nil {
+		return fmt.Errorf("Ошибка удаления: %w", err)
+	}
+
+	if tag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }

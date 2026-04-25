@@ -18,6 +18,8 @@ type mockNoteStore struct {
 	createFn  func(ctx context.Context, title, content string) (model.Note, error)
 	getAllFn  func(ctx context.Context, limit, offset int) ([]model.Note, int, error)
 	getByIDFn func(ctx context.Context, id int) (model.Note, error)
+	updateFn  func(ctx context.Context, id int, title, content string) (model.Note, error)
+	deleteFn  func(ctx context.Context, id int) error
 }
 
 func (m *mockNoteStore) Create(ctx context.Context, title, content string) (model.Note, error) {
@@ -30,6 +32,14 @@ func (m *mockNoteStore) GetAll(ctx context.Context, limit, offset int) ([]model.
 
 func (m *mockNoteStore) GetByID(ctx context.Context, id int) (model.Note, error) {
 	return m.getByIDFn(ctx, id)
+}
+
+func (m *mockNoteStore) Update(ctx context.Context, id int, title, content string) (model.Note, error) {
+	return m.updateFn(ctx, id, title, content)
+}
+
+func (m *mockNoteStore) Delete(ctx context.Context, id int) error {
+	return m.deleteFn(ctx, id)
 }
 
 func TestCreateNote_Success(t *testing.T) {

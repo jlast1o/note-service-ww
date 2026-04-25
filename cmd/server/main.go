@@ -74,6 +74,31 @@ func _getAllAnnotation() {}
 // @Router       /notes/{id} [get]
 func _getByIDAnnotation() {}
 
+// @Summary      Обновить заметку
+// @Description  Полностью заменяет заметку с указанным id.
+// @Tags         notes
+// @Accept       json
+// @Produce      json
+// @Param        id   path      int true "ID заметки"
+// @Param        note body      model.Note true "Новые данные заметки (обязательное поле title)"
+// @Success      200  {object}  model.Note "Обновлённая заметка"
+// @Failure      400  {object}  map[string]string "Ошибка валидации"
+// @Failure      404  {object}  map[string]string "Заметка не найдена"
+// @Failure      500  {object}  map[string]string "Внутренняя ошибка"
+// @Router       /notes/{id} [put]
+func _updateAnnotation() {}
+
+// @Summary      Удалить заметку
+// @Description  Удаляет заметку с указанным id.
+// @Tags         notes
+// @Param        id   path      int true "ID заметки"
+// @Success      204  "Без тела, успешное удаление"
+// @Failure      400  {object}  map[string]string "Некорректный ID"
+// @Failure      404  {object}  map[string]string "Заметка не найдена"
+// @Failure      500  {object}  map[string]string "Внутренняя ошибка"
+// @Router       /notes/{id} [delete]
+func _deleteAnnotation() {}
+
 func main() {
 	// env load
 	if err := godotenv.Load(); err != nil {
@@ -129,6 +154,8 @@ func main() {
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
+	r.Delete("/notes/{id}", noteHandler.Delete)
+	r.Put("/notes/{id}", noteHandler.Update)
 
 	srv := &http.Server{
 		Addr:         ":8080",

@@ -64,6 +64,28 @@ func (c *CachedStore) GetByID(ctx context.Context, id int) (model.Note, error) {
 	return note, nil
 }
 
+func (c *CachedStore) Update(ctx context.Context, id int, title, content string) (model.Note, error) {
+	note, err := c.next.Update(ctx, id, title, content)
+
+	if err != nil {
+		return model.Note{}, fmt.Errorf("Ошибка при update в cache: %w", err)
+	}
+
+	c.invalidate(ctx, id)
+	return note, nil
+}
+
+func (c *CachedStore) Delete(ctx context.Context, id int) error {
+	err := c.next.Delete(ctx, id)
+
+	if err != nil {
+		return fmt.Errorf("Ошибка при delete в cache: %w", err)
+	}
+
+	c.invalidate(ctx, id)
+	return nil
+}
+
 func (c *CachedStore) invalidate(ctx context.Context, id int) {
 	c.redis.Del(ctx, "notes:all", fmt.Sprintf("notes:%d", id))
 }
