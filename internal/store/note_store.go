@@ -100,7 +100,7 @@ func (s *NoteStore) GetByID(ctx context.Context, id int) (model.Note, error) {
 }
 
 func (s *NoteStore) Update(ctx context.Context, id int, title, content string) (model.Note, error) {
-	query := `UPDATE notes SET title = $1, content = $2 where id = $3 RETURNING id, title, content, created_at`
+	query := `UPDATE notes SET title = $2, content = $3 where id = $1 RETURNING id, title, content, created_at`
 
 	row := s.pool.QueryRow(ctx, query, id, title, content)
 	var note model.Note
