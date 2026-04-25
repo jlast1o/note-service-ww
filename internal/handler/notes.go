@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"log"
+	"log/slog"
 	"net/http"
 	"service/internal/model"
 	"service/internal/store"
@@ -12,6 +13,14 @@ import (
 
 	"github.com/go-chi/chi"
 )
+
+type PaginatedResponse struct {
+	Data       []model.Note `json:"data"`
+	Page       int          `json:"page"`
+	Size       int          `json:"size"`
+	Total      int          `json:"total"`
+	TotalPages int          `json:"total_pages"`
+}
 
 type NoteHandler struct {
 	store store.NoteStorer
@@ -77,20 +86,67 @@ func (h *NoteHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Router       /notes [get]
 
 func (h *NoteHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	notes, err := h.store.GetAll(r.Context())
+	pageStr := r.URL.Query().Get("page")
+	sizeStr := r.URL.Query().Get("size")
 
+	// default values
+	page := 1
+	size := 20
+
+	if pageStr != "" {
+		var err error
+		page, err = strconv.Atoi(pageStr)
+		if err != nil || page < 1 {
+			http.Error(w, `{"error":"invalid page"}`, http.StatusBadRequest)
+			return
+		}
+	}
+
+	if pageStr != "" {
+		var err error
+		size, err = strconv.Atoi(sizeStr)
+		if err != nil || size < 1 {
+			http.Error(w, `{"error":"invalid size"}`, http.StatusBadRequest)
+			return
+		}
+
+		if size > 100 {
+			size = 100
+		}
+	}
+
+	offset := (page - 1) * size
+	log.Printf("DEBUG limit=%d offset=%d", size, offset)
+	notes, total, err := h.store.GetAll(r.Context(), size, offset)
 	if err != nil {
+		slog.ErrorContext(r.Context(), "failed to fetch notes", "error", err)
 		http.Error(w, `{"error":"could not fetch notes"}`, http.StatusInternalServerError)
 		return
 	}
 
+	// Вычисляем totalPages (с защитой от деления на 0)
+	totalPages := 0
+	if size > 0 {
+		totalPages = (total + size - 1) / size
+	}
+
+	// Обеспечиваем, что data не будет null
 	if notes == nil {
 		notes = make([]model.Note, 0)
 	}
 
+	resp := PaginatedResponse{
+		Data:       notes,
+		Page:       page,
+		Size:       size,
+		Total:      total,
+		TotalPages: totalPages,
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(notes)
+	json.NewEncoder(w).Encode(resp)
+
 }
 
 // GetByID возвращает заметку по ID.

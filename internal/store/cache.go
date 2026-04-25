@@ -35,29 +35,8 @@ func (c *CachedStore) Create(ctx context.Context, title, content string) (model.
 
 }
 
-func (c *CachedStore) GetAll(ctx context.Context) ([]model.Note, error) {
-	const cacheKey = "notes:all"
-
-	data, err := c.redis.Get(ctx, cacheKey).Bytes()
-
-	if err == nil {
-		var notes []model.Note
-		if err := json.Unmarshal(data, &notes); err == nil {
-			return notes, nil
-		}
-	}
-
-	notes, err := c.next.GetAll(ctx)
-
-	if err != nil {
-		return []model.Note{}, err
-	}
-
-	if jsonData, err := json.Marshal(notes); err == nil {
-		c.redis.Set(ctx, cacheKey, jsonData, c.ttl)
-	}
-
-	return notes, nil
+func (c *CachedStore) GetAll(ctx context.Context, limit, offset int) ([]model.Note, int, error) {
+	return c.next.GetAll(ctx, limit, offset)
 }
 
 func (c *CachedStore) GetByID(ctx context.Context, id int) (model.Note, error) {

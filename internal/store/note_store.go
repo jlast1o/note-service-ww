@@ -11,7 +11,7 @@ import (
 
 type NoteStorer interface {
 	Create(ctx context.Context, title, content string) (model.Note, error)
-	GetAll(ctx context.Context) ([]model.Note, error)
+	GetAll(ctx context.Context, limit, offset int) ([]model.Note, int, error)
 	GetByID(ctx context.Context, id int) (model.Note, error)
 }
 
@@ -46,15 +46,20 @@ func (s *NoteStore) Create(ctx context.Context, title, content string) (model.No
 	return note, nil // успешно создана
 }
 
-func (s *NoteStore) GetAll(ctx context.Context) ([]model.Note, error) {
-	query := `SELECT id, title, content, created_at FROM notes ORDER BY id`
-
-	rows, err := s.pool.Query(ctx, query)
+func (s *NoteStore) GetAll(ctx context.Context, limit, offset int) ([]model.Note, int, error) {
+	var total int
+	err := s.pool.QueryRow(ctx, `SELECT COUNT(*) from notes`).Scan(&total)
 
 	if err != nil {
-		return nil, fmt.Errorf("Не удалось найти записи: %w", err)
+		return nil, 0, fmt.Errorf("подсчет заметок %w", err)
 	}
 
+	query := `SELECT id, title, content, created_at FROM notes ORDER BY id LIMIT $1 OFFSET $2`
+	rows, err := s.pool.Query(ctx, query, limit, offset)
+
+	if err != nil {
+		return nil, 0, fmt.Errorf("получаем заметки: %w", err)
+	}
 	defer rows.Close()
 
 	var notes []model.Note
@@ -62,17 +67,18 @@ func (s *NoteStore) GetAll(ctx context.Context) ([]model.Note, error) {
 	for rows.Next() {
 		var note model.Note
 		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt); err != nil {
-			return nil, fmt.Errorf("Сканирование строки: %w", err)
+			return nil, 0, fmt.Errorf("сканирование строки: %w", err)
 		}
 
 		notes = append(notes, note)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("Ошибка интеграции строки: %w", err)
+		return nil, 0, fmt.Errorf("ошибка итерации строк: %w", err)
 	}
 
-	return notes, nil
+	return notes, total, nil
+
 }
 
 func (s *NoteStore) GetByID(ctx context.Context, id int) (model.Note, error) {

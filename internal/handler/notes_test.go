@@ -16,7 +16,7 @@ import (
 
 type mockNoteStore struct {
 	createFn  func(ctx context.Context, title, content string) (model.Note, error)
-	getAllFn  func(ctx context.Context) ([]model.Note, error)
+	getAllFn  func(ctx context.Context, limit, offset int) ([]model.Note, int, error)
 	getByIDFn func(ctx context.Context, id int) (model.Note, error)
 }
 
@@ -24,8 +24,8 @@ func (m *mockNoteStore) Create(ctx context.Context, title, content string) (mode
 	return m.createFn(ctx, title, content)
 }
 
-func (m *mockNoteStore) GetAll(ctx context.Context) ([]model.Note, error) {
-	return m.getAllFn(ctx)
+func (m *mockNoteStore) GetAll(ctx context.Context, limit, offset int) ([]model.Note, int, error) {
+	return m.getAllFn(ctx, limit, offset)
 }
 
 func (m *mockNoteStore) GetByID(ctx context.Context, id int) (model.Note, error) {
@@ -129,16 +129,17 @@ func TestCreateNote_StoreError(t *testing.T) {
 
 func TestGetAll_Success(t *testing.T) {
 	mockStore := &mockNoteStore{
-		getAllFn: func(ctx context.Context) ([]model.Note, error) {
-			return []model.Note{
+		getAllFn: func(ctx context.Context, limit, offset int) ([]model.Note, int, error) {
+			notes := []model.Note{
 				{ID: 1, Title: "first"},
 				{ID: 2, Title: "second"},
-			}, nil
+			}
+			return notes, 2, nil // 2 заметки всего
 		},
 	}
 	handler := NewNoteHandler(mockStore)
 
-	req := httptest.NewRequest(http.MethodGet, "/notes", nil)
+	req := httptest.NewRequest(http.MethodGet, "/notes?page=1&size=20", nil)
 	w := httptest.NewRecorder()
 	handler.GetAll(w, req)
 
@@ -148,17 +149,17 @@ func TestGetAll_Success(t *testing.T) {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
 	}
 
-	var notes []model.Note
-	json.NewDecoder(resp.Body).Decode(&notes)
-	if len(notes) != 2 {
-		t.Fatalf("expected 2 notes, got %d", len(notes))
+	var pagResp PaginatedResponse
+	json.NewDecoder(resp.Body).Decode(&pagResp)
+	if len(pagResp.Data) != 2 || pagResp.Total != 2 || pagResp.TotalPages != 1 {
+		t.Errorf("unexpected response: %+v", pagResp)
 	}
 }
 
 func TestGetAll_Empty(t *testing.T) {
 	mockStore := &mockNoteStore{
-		getAllFn: func(ctx context.Context) ([]model.Note, error) {
-			return nil, nil // вернёт nil, а обработчик превратит в []
+		getAllFn: func(ctx context.Context, limit, offset int) ([]model.Note, int, error) {
+			return nil, 0, nil // вернёт nil, а обработчик превратит в []
 		},
 	}
 	handler := NewNoteHandler(mockStore)

@@ -51,10 +51,13 @@ import (
 func _createAnnotation() {}
 
 // @Summary      Получить все заметки
-// @Description  Возвращает список всех заметок, отсортированных по ID.
+// @Description  Возвращает список заметок с пагинацией.
 // @Tags         notes
 // @Produce      json
-// @Success      200  {array}   model.Note "Список заметок"
+// @Param        page query     int false "Номер страницы (по умолчанию 1)" default(1)
+// @Param        size query     int false "Размер страницы (по умолчанию 20, максимум 100)" default(20)
+// @Success      200  {object}  PaginatedResponse "Страница заметок"
+// @Failure      400  {object}  map[string]string "Некорректные параметры"
 // @Failure      500  {object}  map[string]string "Внутренняя ошибка"
 // @Router       /notes [get]
 func _getAllAnnotation() {}
