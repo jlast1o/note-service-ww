@@ -142,6 +142,8 @@ func main() {
 	cachedStore := store.NewCachedStore(noteStore, redisClient)
 	noteHandler := handler.NewNoteHandler(cachedStore)
 
+	healthHandler := handler.NewHealthHandler(pool, redisClient)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -154,6 +156,7 @@ func main() {
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),
 	))
+	r.Get("/health", healthHandler.Check)
 	r.Delete("/notes/{id}", noteHandler.Delete)
 	r.Put("/notes/{id}", noteHandler.Update)
 
@@ -172,7 +175,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
-
+	// gracefull shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGABRT)
 	sig := <-quit

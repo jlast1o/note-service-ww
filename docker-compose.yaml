@@ -63,6 +63,16 @@ services:
       - grafana_data:/var/lib/grafana
     networks:
       - monitoring
+  blackbox:
+    image: prom/blackbox-exporter:latest
+    container_name: blackbox
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+    networks:
+      - monitoring
+    volumes:
+      - ./monitoring/blackbox.yml:/etc/blackbox_exporter/config.yml
 
 volumes:
   pgdata:

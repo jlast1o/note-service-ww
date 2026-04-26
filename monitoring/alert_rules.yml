@@ -10,3 +10,11 @@ groups:
         annotations:
           summary: "Высокий трафик на notes-service"
           description: "Количество запросов за минуту выросло на {{ $value }} (порог 10)."
+      - alert: ServiceDegraded
+        expr: probe_success{instance="host.docker.internal:8080/health"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Сервис notes-service имеет недоступные зависимости"
+          description: "Health check не проходит уже 30 секунд."
