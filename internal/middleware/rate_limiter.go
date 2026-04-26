@@ -31,6 +31,11 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 		ip := extractIP(r.RemoteAddr)
 		limiter := rl.getLimiter(ip)
 
+		if r.URL.Path == "/metrics" || r.URL.Path == "/health" || r.URL.Path == "/swagger" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		if !limiter.Allow() {
 			w.Header().Set("X-RateLimit-Limit", formatLimit(rl))
 			w.Header().Set("X-RateLimit-Remaining", "0")
@@ -38,6 +43,7 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 
 			slog.Warn("Слишком много запросов", "ip", ip)
 			http.Error(w, `{"error":"too many requests"}`, http.StatusTooManyRequests)
+			return
 		}
 
 		next.ServeHTTP(w, r)
