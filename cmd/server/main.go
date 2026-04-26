@@ -184,17 +184,23 @@ func main() {
 	}
 
 	defer redisClient.Close()
-
+	// stores
 	noteStore := store.NewNoteStore(pool)
 	cachedStore := store.NewCachedStore(noteStore, redisClient)
-	noteHandler := handler.NewNoteHandler(cachedStore)
 
+	// handlers for bd's
+	noteHandler := handler.NewNoteHandler(cachedStore)
 	healthHandler := handler.NewHealthHandler(pool, redisClient)
+
+	// middleware for ratelimit
+	rateLimiter := middleware.NewRateLimiter(cfg.RateLimitRequests, cfg.RateLimitPeriod)
 
 	r := chi.NewRouter()
 
+	// middlewares activations
 	r.Use(middleware.Logger)
 	r.Use(middleware.MetricsMiddleware)
+	r.Use(rateLimiter.Middleware)
 
 	r.Post("/notes", noteHandler.Create)
 	r.Get("/notes", noteHandler.GetAll)
