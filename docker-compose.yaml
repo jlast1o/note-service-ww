@@ -63,6 +63,7 @@ services:
       - grafana_data:/var/lib/grafana
     networks:
       - monitoring
+
   blackbox:
     image: prom/blackbox-exporter:latest
     container_name: blackbox
@@ -73,6 +74,18 @@ services:
       - monitoring
     volumes:
       - ./monitoring/blackbox.yml:/etc/blackbox_exporter/config.yml
+
+  jaeger:
+      image: jaegertracing/all-in-one:latest
+      container_name: jaeger
+      restart: unless-stopped
+      environment:
+        - COLLECTOR_OTLP_ENABLED=true
+      ports:
+        - "16686:16686"  # UI
+        - "4318:4318"    # OTLP HTTP
+      networks:
+        - monitoring
 
 volumes:
   pgdata:

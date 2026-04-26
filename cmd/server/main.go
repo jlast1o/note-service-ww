@@ -32,6 +32,13 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/joho/godotenv"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
 
 	_ "service/docs"
 
@@ -99,6 +106,43 @@ func _updateAnnotation() {}
 // @Router       /notes/{id} [delete]
 func _deleteAnnotation() {}
 
+func initTracer(ctx context.Context) func() {
+	exporter, err := otlptracehttp.New(
+		ctx, otlptracehttp.WithEndpoint("localhost:4318"),
+		otlptracehttp.WithInsecure(),
+	)
+
+	if err != nil {
+		slog.Error("OTLP exporter не законнектился:", "error", err)
+		return func() {}
+	}
+
+	res := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceName("service"),
+		semconv.ServiceVersion("1.0.0"),
+		attribute.String("enviroment", "development"),
+	)
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter,
+			sdktrace.WithBatchTimeout(5*time.Second),
+		),
+		sdktrace.WithResource(res),
+	)
+
+	otel.SetTracerProvider(tp)
+
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tp.Shutdown(ctx); err != nil {
+			slog.Error("Tracer выключается", "error", err)
+		}
+		exporter.Shutdown(ctx)
+	}
+}
+
 func main() {
 	// env load
 	if err := godotenv.Load(); err != nil {
@@ -113,6 +157,9 @@ func main() {
 
 	middleware.InitMetrics()
 	ctx := context.Background()
+
+	shutdownTracer := initTracer(ctx)
+	defer shutdownTracer()
 	// db load
 	pool, err := store.NewPool(ctx, cfg)
 	if err != nil {
@@ -160,9 +207,11 @@ func main() {
 	r.Delete("/notes/{id}", noteHandler.Delete)
 	r.Put("/notes/{id}", noteHandler.Update)
 
+	otelHandler := otelhttp.NewHandler(r, "notes-service-http")
+
 	srv := &http.Server{
 		Addr:         ":8080",
-		Handler:      r,
+		Handler:      otelHandler,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  15 * time.Second,
