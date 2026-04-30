@@ -17,7 +17,7 @@ services:
       - monitoring
 
   redis:
-    image: redis:7-alpine                     # официальный лёгкий образ Redis
+    image: redis:7-alpine                  
     container_name: notes-redis
     restart: unless-stopped
     ports:
